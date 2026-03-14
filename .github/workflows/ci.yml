@@ -69,6 +69,7 @@ jobs:
         shell: bash
 
       - name: Upload coverage to Codecov
+        if: matrix.python-version != '3.14t'
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
