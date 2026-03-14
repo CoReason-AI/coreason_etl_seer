@@ -1,0 +1,28 @@
+# The Prosperity Public License 3.0.0
+# Contributor: CoReason, Inc.
+# Source Code: https://github.com/CoReason-AI/coreason_etl_seer
+
+"""Defines the configuration policies for the Epistemic SEER integration."""
+
+from pydantic import Field, HttpUrl, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class EpistemicSeerConfigurationPolicy(BaseSettings):
+    """Configuration boundary for authenticating and routing to the NCI SEER API."""
+
+    seer_api_key: SecretStr = Field(
+        ...,
+        description="The secret token required for X-SEERAPI-Key authentication header.",
+    )
+
+    seer_base_url: HttpUrl = Field(
+        default=HttpUrl("https://api.seer.cancer.gov/rest/"),
+        description="The base uniform resource locator for the SEER REST API.",
+    )
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
