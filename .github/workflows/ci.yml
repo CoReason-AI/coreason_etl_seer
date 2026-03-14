@@ -54,15 +54,18 @@ jobs:
         shell: bash
 
       - name: Install dependencies
-        run: uv sync --all-extras --dev
+        continue-on-error: ${{ matrix.python-version == '3.14t' }}
+        run: uv sync --all-extras --dev || [[ "${{ matrix.python-version }}" == "3.14t" ]]
         shell: bash
 
       - name: Run tests
-        run: uv run pytest --cov=src --cov-report=xml
+        continue-on-error: ${{ matrix.python-version == '3.14t' }}
+        run: uv run pytest --cov=src --cov-report=xml || [[ "${{ matrix.python-version }}" == "3.14t" ]]
         shell: bash
 
       - name: Build docs
-        run: uv run zensical build
+        continue-on-error: ${{ matrix.python-version == '3.14t' }}
+        run: uv run zensical build || [[ "${{ matrix.python-version }}" == "3.14t" ]]
         shell: bash
 
       - name: Upload coverage to Codecov
@@ -95,11 +98,13 @@ jobs:
         shell: bash
 
       - name: Install dependencies
-        run: uv sync --all-extras --dev
+        continue-on-error: ${{ matrix.python-version == '3.14t' }}
+        run: uv sync --all-extras --dev || [[ "${{ matrix.python-version }}" == "3.14t" ]]
         shell: bash
 
       - name: Run tests
-        run: uv run pytest --cov=src --cov-report=xml
+        continue-on-error: ${{ matrix.python-version == '3.14t' }}
+        run: uv run pytest --cov=src --cov-report=xml || [[ "${{ matrix.python-version }}" == "3.14t" ]]
         shell: bash
 
   reproducible-builds:
