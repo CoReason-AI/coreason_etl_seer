@@ -8,28 +8,16 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_etl_seer
 
+from importlib import reload
 from pathlib import Path
-
-from coreason_etl_seer.utils.logger import logger
-
-
-def test_logger_initialization() -> None:
-    """Test that the logger is initialized correctly and creates the log directory."""
-    # Since the logger is initialized on import, we check side effects
-
-    # Check if logs directory creation is handled
-    # Note: running this test might actually create the directory in the test environment
-    # if it doesn't exist.
-
-    log_path = Path("logs")
-    assert log_path.exists()
-    assert log_path.is_dir()
-
-    # Verify app.log creation if it was logged to (it might be empty or not created until log)
-    # logger.info("Test log")
-    # assert (log_path / "app.log").exists()
+from unittest import mock
 
 
-def test_logger_exports() -> None:
-    """Test that logger is exported."""
-    assert logger is not None
+def test_logger_creates_directory() -> None:
+    """Test that the logger setup creates the logs directory if it does not exist."""
+    # If it exists, remove it or pretend it doesn't
+    with mock.patch.object(Path, "exists", return_value=False), mock.patch.object(Path, "mkdir") as mock_mkdir:
+        import coreason_etl_seer.utils.logger as log_module
+
+        reload(log_module)
+        mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
