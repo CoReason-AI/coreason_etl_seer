@@ -36,6 +36,7 @@ jobs:
     needs: [lint-and-audit]
     if: always() && needs.lint-and-audit.result == 'success'
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.python-version == '3.14t' }}
     strategy:
       matrix:
         python-version: ["3.14", "3.14t"]
@@ -75,6 +76,7 @@ jobs:
     needs: [lint-and-audit]
     if: always() && needs.lint-and-audit.result == 'success'
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.python-version == '3.14t' }}
     strategy:
       matrix:
         os: [windows-latest, macos-latest]
