@@ -19,10 +19,14 @@ def clean_env_state() -> Generator[None]:
     original_api_key = os.environ.get("SEER_API_KEY")
     original_base_url = os.environ.get("SEER_BASE_URL")
 
+    original_max_nesting = os.environ.get("MAX_TABLE_NESTING")
+
     if "SEER_API_KEY" in os.environ:
         del os.environ["SEER_API_KEY"]
     if "SEER_BASE_URL" in os.environ:
         del os.environ["SEER_BASE_URL"]
+    if "MAX_TABLE_NESTING" in os.environ:
+        del os.environ["MAX_TABLE_NESTING"]
 
     yield
 
@@ -30,6 +34,8 @@ def clean_env_state() -> Generator[None]:
         os.environ["SEER_API_KEY"] = original_api_key
     if original_base_url is not None:
         os.environ["SEER_BASE_URL"] = original_base_url
+    if original_max_nesting is not None:
+        os.environ["MAX_TABLE_NESTING"] = original_max_nesting
 
 
 def test_configuration_initialization_success() -> None:
@@ -40,6 +46,29 @@ def test_configuration_initialization_success() -> None:
 
     assert config.seer_api_key.get_secret_value() == "test-secret-key-123"
     assert str(config.seer_base_url) == "https://api.seer.cancer.gov/rest/"
+    assert config.max_table_nesting == 0
+
+
+def test_configuration_override_max_table_nesting() -> None:
+    """Verifies that the max_table_nesting can be overridden via environment variables."""
+    os.environ["SEER_API_KEY"] = "test-secret-key-123"
+    os.environ["MAX_TABLE_NESTING"] = "1"
+
+    config = EpistemicSeerConfigurationPolicy()
+
+    assert config.max_table_nesting == 1
+
+
+def test_configuration_invalid_max_table_nesting_format() -> None:
+    """Ensures that invalid integers are rejected by the configuration policy."""
+    os.environ["SEER_API_KEY"] = "test-secret-key-123"
+    os.environ["MAX_TABLE_NESTING"] = "not-an-int"
+
+    with pytest.raises(ValidationError) as exc_info:
+        EpistemicSeerConfigurationPolicy()
+
+    assert "max_table_nesting" in str(exc_info.value)
+    assert "Input should be a valid integer" in str(exc_info.value)
 
 
 def test_configuration_fails_without_api_key() -> None:
