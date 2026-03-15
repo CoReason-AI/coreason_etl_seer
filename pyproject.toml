@@ -18,6 +18,7 @@ dependencies = [
     "pydantic>=2.12.5",
     "pydantic-settings>=2.13.1",
     "requests>=2.32.5",
+    "urllib3>=2.6.3",
 ]
 license = { file = "LICENSE" }
 classifiers = [
@@ -45,6 +46,7 @@ dev = [
     "pytest-xdist>=3.6.1",
     "responses>=0.26.0",
     "pytest-mock>=3.15.1",
+    "types-requests>=2.32.4.20260107",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -60,7 +62,7 @@ Documentation = "https://github.com/CoReason-AI/coreason_etl_seer"
 
 [tool.ruff]
 line-length = 120
-target-version = "py314"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "UP", "SIM", "RUF", "ARG", "C4", "PT", "TCH", "FA", "PIE", "RET", "PERF", "FURB", "LOG", "N", "A", "S"]
@@ -82,4 +84,4 @@ asyncio_mode = "auto"
 omit = ["tests/*"]
 
 [tool.deptry]
-ignore = ["DEP002"]
+ignore = ["DEP002", "DEP003"]
