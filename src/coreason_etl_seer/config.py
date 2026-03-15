@@ -21,6 +21,14 @@ class EpistemicSeerConfigurationPolicy(BaseSettings):
         description="The base uniform resource locator for the SEER REST API.",
     )
 
+    max_table_nesting: int = Field(
+        default=0,
+        description=(
+            "Globally disables relational child-table creation in dlt, "
+            "forcing deep ontology dictionary to land safely as a single JSONB column."
+        ),
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
