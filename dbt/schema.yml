@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: SEER_Disease_Ontology
+    description: "Silver layer table mapping SEER disease ontology with flattened hierarchy."
+    columns:
+      - name: disease_id
+        description: "Primary Key extracted from SEER Disease ID."
+        tests:
+          - unique
+          - not_null
+      - name: coreason_id
+        description: "Pre-computed UUIDv5."
+        tests:
+          - unique
+          - not_null
+      - name: disease_name
+        description: "Name of the disease (e.g., 'Lung adenocarcinoma')."
+        tests:
+          - not_null
