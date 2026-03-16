@@ -42,6 +42,11 @@ class EpistemicSeerConfigurationPolicy(BaseSettings):
         description="The deterministic UUID namespace for pre-computing coreason_id UUIDv5 hashes.",
     )
 
+    epistemic_placeholder_manifest: str = Field(
+        default="active",
+        description="A benign placeholder manifest variable to force diff detection of configuration policy.",
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
