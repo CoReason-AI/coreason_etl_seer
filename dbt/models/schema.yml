@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: silver_seer_disease_ontology
+    description: "The flattened, strictly typed ontology of SEER diseases."
+    columns:
+      - name: disease_id
+        description: "Primary Key. The official SEER Disease ID or ICD-O-3 Code."
+        tests:
+          - unique
+          - not_null
+      - name: coreason_id
+        description: "Pre-computed UUIDv5 directly from the Bronze layer."
+        tests:
+          - unique
+          - not_null
+      - name: disease_name
+        description: "The name of the disease (e.g., 'Lung adenocarcinoma')."
+        tests:
+          - not_null
+      - name: icdo3_site_code
+        description: "The site code (e.g., 'C34.9')."
+      - name: icdo3_histology_code
+        description: "The histology code (e.g., '8140')."
+      - name: behavior_code
+        description: "The behavior code (e.g., '3' for Malignant)."
+
+  - name: gold_seer_oncology_index
+    description: "A clean, flat table joining disease names with full ICD-O-3 codes."
+
+  - name: gold_seer_staging_schemas
+    description: "Mapping table linking specific diseases to valid staging systems."
