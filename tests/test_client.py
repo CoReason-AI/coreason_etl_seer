@@ -10,8 +10,6 @@
 
 """Test suite for validating the Epistemic SEER HTTP Client Policy."""
 
-import os
-
 import pytest
 import requests
 import responses
@@ -21,10 +19,12 @@ from coreason_etl_seer.config import EpistemicSeerConfigurationPolicy
 
 
 @pytest.fixture
-def test_config() -> EpistemicSeerConfigurationPolicy:
+def test_config(monkeypatch: pytest.MonkeyPatch) -> EpistemicSeerConfigurationPolicy:
     """Provides a valid EpistemicSeerConfigurationPolicy for testing."""
-    os.environ["SEER_API_KEY"] = "mock-api-key"
-    os.environ["SEER_BASE_URL"] = "https://api.seer.cancer.gov/rest/"
+    monkeypatch.setenv("SEER_API_KEY", "mock-api-key")
+    monkeypatch.setenv("SEER_BASE_URL", "https://api.seer.cancer.gov/rest/")
+    monkeypatch.delenv("MAX_TABLE_NESTING", raising=False)
+    monkeypatch.delenv("SEER_NAMESPACE_UUID", raising=False)
     return EpistemicSeerConfigurationPolicy()
 
 
