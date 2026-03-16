@@ -10,6 +10,8 @@
 
 """Defines the configuration policies for the Epistemic SEER integration."""
 
+import uuid
+
 from pydantic import Field, HttpUrl, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -33,6 +35,11 @@ class EpistemicSeerConfigurationPolicy(BaseSettings):
             "Globally disables relational child-table creation in dlt, "
             "forcing deep ontology dictionary to land safely as a single JSONB column."
         ),
+    )
+
+    seer_namespace_uuid: uuid.UUID = Field(
+        default=uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+        description="The deterministic UUID namespace for pre-computing coreason_id UUIDv5 hashes.",
     )
 
     model_config = SettingsConfigDict(

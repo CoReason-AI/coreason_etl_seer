@@ -11,6 +11,7 @@
 """Test suite for validating the Epistemic SEER Configuration Policy."""
 
 import os
+import uuid
 from collections.abc import Generator
 
 import pytest
@@ -26,6 +27,7 @@ def clean_env_state() -> Generator[None]:
     original_base_url = os.environ.get("SEER_BASE_URL")
 
     original_max_nesting = os.environ.get("MAX_TABLE_NESTING")
+    original_namespace_uuid = os.environ.get("SEER_NAMESPACE_UUID")
 
     if "SEER_API_KEY" in os.environ:
         del os.environ["SEER_API_KEY"]
@@ -33,6 +35,8 @@ def clean_env_state() -> Generator[None]:
         del os.environ["SEER_BASE_URL"]
     if "MAX_TABLE_NESTING" in os.environ:
         del os.environ["MAX_TABLE_NESTING"]
+    if "SEER_NAMESPACE_UUID" in os.environ:
+        del os.environ["SEER_NAMESPACE_UUID"]
 
     yield
 
@@ -42,6 +46,8 @@ def clean_env_state() -> Generator[None]:
         os.environ["SEER_BASE_URL"] = original_base_url
     if original_max_nesting is not None:
         os.environ["MAX_TABLE_NESTING"] = original_max_nesting
+    if original_namespace_uuid is not None:
+        os.environ["SEER_NAMESPACE_UUID"] = original_namespace_uuid
 
 
 def test_configuration_initialization_success() -> None:
@@ -53,6 +59,7 @@ def test_configuration_initialization_success() -> None:
     assert config.seer_api_key.get_secret_value() == "test-secret-key-123"
     assert str(config.seer_base_url) == "https://api.seer.cancer.gov/rest/"
     assert config.max_table_nesting == 0
+    assert config.seer_namespace_uuid == uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
 
 def test_configuration_override_max_table_nesting() -> None:
@@ -116,3 +123,26 @@ def test_configuration_secret_string_representation() -> None:
 
     assert "super-secret-key-do-not-log" not in repr(config)
     assert "super-secret-key-do-not-log" not in str(config.model_dump())
+
+
+def test_configuration_override_seer_namespace_uuid() -> None:
+    """Verifies that the SEER namespace UUID can be overridden via environment variables."""
+    os.environ["SEER_API_KEY"] = "test-secret-key-123"
+    custom_uuid = "12345678-1234-5678-1234-567812345678"
+    os.environ["SEER_NAMESPACE_UUID"] = custom_uuid
+
+    config = EpistemicSeerConfigurationPolicy()
+
+    assert config.seer_namespace_uuid == uuid.UUID(custom_uuid)
+
+
+def test_configuration_invalid_seer_namespace_uuid() -> None:
+    """Ensures that invalid UUID strings are rejected by the configuration policy."""
+    os.environ["SEER_API_KEY"] = "test-secret-key-123"
+    os.environ["SEER_NAMESPACE_UUID"] = "invalid-uuid-string"
+
+    with pytest.raises(ValidationError) as exc_info:
+        EpistemicSeerConfigurationPolicy()
+
+    assert "seer_namespace_uuid" in str(exc_info.value)
+    assert "Input should be a valid UUID" in str(exc_info.value)
