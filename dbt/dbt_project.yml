@@ -1,0 +1,20 @@
+name: 'coreason_etl_seer'
+version: '1.0.0'
+config-version: 2
+
+profile: 'coreason_etl_seer'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  coreason_etl_seer:
+    +materialized: table
