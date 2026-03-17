@@ -50,6 +50,15 @@ def clean_env_state() -> Generator[None]:
         os.environ["SEER_NAMESPACE_UUID"] = original_namespace_uuid
 
 
+def test_configuration_epistemic_placeholder_manifest_override() -> None:
+    """Verifies that the epistemic_placeholder_manifest dummy variable functions correctly."""
+    os.environ["SEER_API_KEY"] = "test-secret-key-123"
+    os.environ["EPISTEMIC_PLACEHOLDER_MANIFEST"] = "inactive"
+
+    config = EpistemicSeerConfigurationPolicy()
+    assert config.epistemic_placeholder_manifest == "inactive"
+
+
 def test_configuration_initialization_success() -> None:
     """Verifies that the configuration policy instantiates correctly when the required API key is present."""
     os.environ["SEER_API_KEY"] = "test-secret-key-123"

@@ -85,3 +85,6 @@ omit = ["tests/*"]
 
 [tool.deptry]
 ignore = ["DEP002", "DEP003"]
+
+[tool.coreason.epistemic_placeholder_policy]
+active = true
