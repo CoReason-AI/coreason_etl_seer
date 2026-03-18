@@ -111,13 +111,13 @@ def fetch_and_prepare_staging_records(
     yield df.to_dicts()
 
 
-@dlt.source  # type: ignore[misc]
+@dlt.source
 def seer_source(config: EpistemicSeerConfigurationPolicy) -> Any:
     """The DLT source for SEER API data."""
     client = EpistemicSeerClientPolicy(config)
     namespace = config.seer_namespace_uuid
 
-    @dlt.resource(name="seer_disease_raw", write_disposition="merge", primary_key="disease_id", merge_key="disease_id")  # type: ignore[misc]
+    @dlt.resource(name="seer_disease_raw", write_disposition="merge", primary_key="disease_id", merge_key="disease_id")
     def disease_resource() -> Iterator[list[dict[str, Any]]]:
         for batch in fetch_and_prepare_disease_records(client, namespace):
             processed_batch = [
@@ -131,7 +131,7 @@ def seer_source(config: EpistemicSeerConfigurationPolicy) -> Any:
             ]
             yield processed_batch
 
-    @dlt.resource(  # type: ignore[misc]
+    @dlt.resource(
         name="seer_staging_raw",
         write_disposition="merge",
         primary_key="disease_id",
