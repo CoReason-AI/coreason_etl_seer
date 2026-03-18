@@ -127,6 +127,8 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "requests" },
+    { name = "responses" },
+    { name = "types-requests" },
     { name = "urllib3" },
 ]
 
@@ -163,6 +165,8 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.13.1" },
     { name = "requests", specifier = ">=2.32.5" },
+    { name = "responses", specifier = ">=0.26.0" },
+    { name = "types-requests", specifier = ">=2.32.4" },
     { name = "urllib3", specifier = ">=2.6.3" },
 ]
 
