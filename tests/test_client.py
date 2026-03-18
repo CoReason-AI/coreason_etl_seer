@@ -34,7 +34,7 @@ def seer_client(test_config: EpistemicSeerConfigurationPolicy) -> EpistemicSeerC
     return EpistemicSeerClientPolicy(test_config)
 
 
-@responses.activate  # type: ignore[misc]  # type: ignore[misc]
+@responses.activate
 def test_fetch_endpoint_manifold_success(seer_client: EpistemicSeerClientPolicy) -> None:
     """Verifies that the client correctly fetches data from a given endpoint."""
     url = "https://api.seer.cancer.gov/rest/disease"
@@ -55,7 +55,7 @@ def test_fetch_endpoint_manifold_success(seer_client: EpistemicSeerClientPolicy)
     assert data == mock_data
 
 
-@responses.activate  # type: ignore[misc]  # type: ignore[misc]
+@responses.activate
 def test_fetch_endpoint_manifold_retry_on_429(seer_client: EpistemicSeerClientPolicy) -> None:
     """Verifies that the client correctly retries a request on a 429 status code."""
     url = "https://api.seer.cancer.gov/rest/disease"
@@ -80,7 +80,7 @@ def test_fetch_endpoint_manifold_retry_on_429(seer_client: EpistemicSeerClientPo
     assert len(responses.calls) == 2
 
 
-@responses.activate  # type: ignore[misc]  # type: ignore[misc]
+@responses.activate
 def test_fetch_endpoint_manifold_retry_on_500(seer_client: EpistemicSeerClientPolicy) -> None:
     """Verifies that the client correctly retries a request on a 500 status code."""
     url = "https://api.seer.cancer.gov/rest/disease"
@@ -105,7 +105,7 @@ def test_fetch_endpoint_manifold_retry_on_500(seer_client: EpistemicSeerClientPo
     assert len(responses.calls) == 2
 
 
-@responses.activate  # type: ignore[misc]  # type: ignore[misc]
+@responses.activate
 def test_fetch_endpoint_manifold_http_error(seer_client: EpistemicSeerClientPolicy) -> None:
     """Verifies that the client correctly raises an exception on HTTP errors."""
     url = "https://api.seer.cancer.gov/rest/disease"
@@ -121,7 +121,7 @@ def test_fetch_endpoint_manifold_http_error(seer_client: EpistemicSeerClientPoli
         seer_client.fetch_endpoint_manifold("disease")
 
 
-@responses.activate  # type: ignore[misc]  # type: ignore[misc]
+@responses.activate
 def test_fetch_endpoint_manifold_invalid_json(seer_client: EpistemicSeerClientPolicy) -> None:
     """Verifies that the client raises a ValueError if the response is not a JSON dictionary."""
     url = "https://api.seer.cancer.gov/rest/disease"
@@ -137,7 +137,7 @@ def test_fetch_endpoint_manifold_invalid_json(seer_client: EpistemicSeerClientPo
         seer_client.fetch_endpoint_manifold("disease")
 
 
-@responses.activate  # type: ignore[misc]  # type: ignore[misc]
+@responses.activate
 def test_fetch_endpoint_manifold_with_params(seer_client: EpistemicSeerClientPolicy) -> None:
     """Verifies that the client correctly sends query parameters."""
     url = "https://api.seer.cancer.gov/rest/disease"
