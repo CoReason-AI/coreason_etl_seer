@@ -111,7 +111,7 @@ def fetch_and_prepare_staging_records(
     yield df.to_dicts()
 
 
-@dlt.source  # type: ignore[misc]  # type: ignore[misc]
+@dlt.source  # type: ignore[misc]
 def seer_source(config: EpistemicSeerConfigurationPolicy) -> Any:
     """The DLT source for SEER API data."""
     client = EpistemicSeerClientPolicy(config)
