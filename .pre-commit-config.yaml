@@ -17,7 +17,7 @@ repos:
     rev: v1.18.2
     hooks:
       - id: mypy
-        additional_dependencies: ["pydantic>=2.0", "pytest", "types-PyYAML", "pydantic-settings>=2.0", "types-requests"]
+        additional_dependencies: ["pydantic>=2.0", "pytest", "types-PyYAML", "pydantic-settings>=2.0", "types-requests", "dlt>=1.23.0", "responses>=0.26.0"]
   - repo: https://github.com/AleksaC/hadolint-py
     rev: v2.14.0
     hooks:

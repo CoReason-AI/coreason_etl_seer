@@ -50,7 +50,7 @@ def test_generate_coreason_id() -> None:
     assert val == _generate_coreason_id(ns, "123")
 
 
-@responses.activate  # type: ignore[misc]
+@responses.activate
 def test_fetch_and_prepare_disease_records(seer_client: EpistemicSeerClientPolicy) -> None:
     """Verifies fetching and preparing disease records."""
     url = "https://api.seer.cancer.gov/rest/disease"
@@ -82,7 +82,7 @@ def test_fetch_and_prepare_disease_records(seer_client: EpistemicSeerClientPolic
     assert batch[0]["name"] == "Lung Cancer"
 
 
-@responses.activate  # type: ignore[misc]
+@responses.activate
 def test_seer_source(test_config: EpistemicSeerConfigurationPolicy) -> None:
     """Verifies DLT source generation and processing."""
     disease_url = "https://api.seer.cancer.gov/rest/disease"
@@ -126,7 +126,7 @@ def test_seer_source(test_config: EpistemicSeerConfigurationPolicy) -> None:
     assert s_data[0]["raw_data"] == {"id": "789", "schema": "TNM"}
 
 
-@responses.activate  # type: ignore[misc]
+@responses.activate
 def test_fetch_and_prepare_disease_records_empty_and_fallback(seer_client: EpistemicSeerClientPolicy) -> None:
     """Verifies fetching disease records with empty and fallback logic."""
     url = "https://api.seer.cancer.gov/rest/disease"
@@ -153,7 +153,7 @@ def test_fetch_and_prepare_disease_records_empty_and_fallback(seer_client: Epist
     responses.remove(responses.GET, url)
 
 
-@responses.activate  # type: ignore[misc]
+@responses.activate
 def test_fetch_and_prepare_staging_records_empty_and_fallback(seer_client: EpistemicSeerClientPolicy) -> None:
     """Verifies fetching staging records with empty and fallback logic."""
     url = "https://api.seer.cancer.gov/rest/staging"
