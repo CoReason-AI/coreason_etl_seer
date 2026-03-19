@@ -402,6 +402,61 @@ def test_paginate_endpoint_manifold_with_params(seer_client: EpistemicSeerClient
 
 
 @responses.activate
+def test_paginate_endpoint_manifold_overrides_initial_pagination_params(seer_client: EpistemicSeerClientPolicy) -> None:
+    """Verifies that if the user passes 'offset' or 'count' in params, the paginator strictly overrides them."""
+    url = "https://api.seer.cancer.gov/rest/disease"
+
+    # User attempts to pass offset=999, count=5
+    # The paginator should ignore them and start at offset=0, count=2 (page_size)
+    responses.add(
+        responses.GET,
+        url,
+        json={"diseases": [{"id": "1"}]},
+        status=200,
+        match=[responses.matchers.query_param_matcher({"offset": "0", "count": "2", "type": "lung"})],
+    )
+
+    initial_params = {"offset": 999, "count": 5, "type": "lung"}
+    pages = list(seer_client.paginate_endpoint_manifold("disease", params=initial_params, page_size=2))
+    assert len(pages) == 1
+    assert pages[0] == [{"id": "1"}]
+
+
+@responses.activate
+def test_paginate_endpoint_manifold_handles_null_key(seer_client: EpistemicSeerClientPolicy) -> None:
+    """Verifies that if the API returns explicit null for the key, it exits gracefully."""
+    url = "https://api.seer.cancer.gov/rest/disease"
+
+    responses.add(
+        responses.GET,
+        url,
+        json={"diseases": None},
+        status=200,
+        match=[responses.matchers.query_param_matcher({"offset": "0", "count": "2"})],
+    )
+
+    pages = list(seer_client.paginate_endpoint_manifold("disease", page_size=2))
+    assert len(pages) == 0
+
+
+@responses.activate
+def test_paginate_endpoint_manifold_handles_empty_dict(seer_client: EpistemicSeerClientPolicy) -> None:
+    """Verifies that if the API returns an empty dict, it exits gracefully."""
+    url = "https://api.seer.cancer.gov/rest/disease"
+
+    responses.add(
+        responses.GET,
+        url,
+        json={},
+        status=200,
+        match=[responses.matchers.query_param_matcher({"offset": "0", "count": "2"})],
+    )
+
+    pages = list(seer_client.paginate_endpoint_manifold("disease", page_size=2))
+    assert len(pages) == 0
+
+
+@responses.activate
 def test_paginate_endpoint_manifold_midway_failure_recovery(seer_client: EpistemicSeerClientPolicy) -> None:
     """Verifies pagination logic can recover from a transient failure (e.g. 500) midway through pages."""
     url = "https://api.seer.cancer.gov/rest/disease"
