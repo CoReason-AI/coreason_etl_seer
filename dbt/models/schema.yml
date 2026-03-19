@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: silver_seer_disease_ontology
+  - name: coreason_etl_seer_silver_seer_disease_ontology
     description: "The flattened, strictly typed ontology of SEER diseases."
     columns:
       - name: disease_id
@@ -25,8 +25,8 @@ models:
       - name: behavior_code
         description: "The behavior code (e.g., '3' for Malignant)."
 
-  - name: gold_seer_oncology_index
+  - name: coreason_etl_seer_gold_seer_oncology_index
     description: "A clean, flat table joining disease names with full ICD-O-3 codes."
 
-  - name: gold_seer_staging_schemas
+  - name: coreason_etl_seer_gold_seer_staging_schemas
     description: "Mapping table linking specific diseases to valid staging systems."

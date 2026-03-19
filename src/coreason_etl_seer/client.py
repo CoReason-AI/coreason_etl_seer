@@ -10,13 +10,24 @@
 
 """Defines the HTTP client policy for NCI SEER API interactions."""
 
+import time
+from collections.abc import Iterator
+from http import HTTPStatus
 from typing import Any
+from urllib.parse import urljoin
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from .config import EpistemicSeerConfigurationPolicy
+from .exceptions import (
+    EpistemicSeerFaultEvent,
+    SeerAuthenticationFaultEvent,
+    SeerGatewayFaultEvent,
+    SeerRateLimitFaultEvent,
+    SeerResourceNotFoundFaultEvent,
+)
 from .utils.logger import logger
 
 
@@ -42,10 +53,27 @@ class EpistemicSeerClientPolicy:
             {"X-SEERAPI-Key": self.config.seer_api_key.get_secret_value(), "Accept": "application/json"}
         )
 
+        self.last_request_time: float = 0.0
+        self.rate_limit_delay_seconds: float = 1.0  # Proactive 1s delay
+
+    def _enforce_proactive_rate_limit(self) -> None:
+        """Enforces a proactive delay to prevent 429 errors from the SEER API."""
+        now = time.time()
+        elapsed = now - self.last_request_time
+        if elapsed < self.rate_limit_delay_seconds:
+            sleep_time = self.rate_limit_delay_seconds - elapsed
+            logger.debug(f"Proactive rate limiting: sleeping for {sleep_time:.2f} seconds.")
+            time.sleep(sleep_time)
+        self.last_request_time = time.time()
+
     def fetch_endpoint_manifold(self, endpoint: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         """Fetches data from a given SEER API endpoint."""
-        base_url = str(self.config.seer_base_url).rstrip("/")
-        url = f"{base_url}/{endpoint.lstrip('/')}"
+        base_url = str(self.config.seer_base_url)
+        if not base_url.endswith("/"):
+            base_url += "/"
+        url = urljoin(base_url, endpoint.lstrip("/"))
+
+        self._enforce_proactive_rate_limit()
 
         logger.debug(f"Initiating GET request to SEER API endpoint: {url}")
 
@@ -53,14 +81,60 @@ class EpistemicSeerClientPolicy:
             response = self.session.get(url, params=params, timeout=30)
             response.raise_for_status()
 
-            data = response.json()
+            try:
+                data = response.json()
+            except ValueError as val_err:
+                logger.exception(f"Invalid JSON response from SEER API endpoint {url}")
+                raise EpistemicSeerFaultEvent(f"JSON Parsing Error: {val_err}") from val_err
+
             if not isinstance(data, dict):
-                raise ValueError("Expected JSON response to be a dictionary")
+                raise EpistemicSeerFaultEvent("Expected JSON response to be a dictionary")
             return data
 
-        except requests.exceptions.RequestException:
+        except requests.exceptions.HTTPError as http_err:
+            status_code = response.status_code
+            logger.exception(f"HTTPError {status_code} from SEER API endpoint {url}")
+
+            match status_code:
+                case HTTPStatus.UNAUTHORIZED | HTTPStatus.FORBIDDEN:
+                    raise SeerAuthenticationFaultEvent(f"Authentication failed: {http_err}") from http_err
+                case HTTPStatus.NOT_FOUND:
+                    raise SeerResourceNotFoundFaultEvent(f"Resource not found: {http_err}") from http_err
+                case HTTPStatus.TOO_MANY_REQUESTS:
+                    raise SeerRateLimitFaultEvent(f"Rate limit exceeded: {http_err}") from http_err
+                case code if code >= HTTPStatus.INTERNAL_SERVER_ERROR:
+                    raise SeerGatewayFaultEvent(f"Server error: {http_err}") from http_err
+                case _:
+                    raise EpistemicSeerFaultEvent(f"HTTP Error: {http_err}") from http_err
+        except requests.exceptions.RequestException as req_err:
             logger.exception(f"Failed to fetch data from SEER API endpoint {url}")
-            raise
-        except ValueError:
-            logger.exception(f"Invalid JSON response from SEER API endpoint {url}")
-            raise
+            raise EpistemicSeerFaultEvent(f"Request Error: {req_err}") from req_err
+
+    def paginate_endpoint_manifold(
+        self, endpoint: str, params: dict[str, Any] | None = None, page_size: int = 100
+    ) -> Iterator[list[dict[str, Any]]]:
+        """Automatically paginates an endpoint, yielding chunks of records until exhaustion."""
+        current_offset = 0
+        if params is None:
+            params = {}
+
+        while True:
+            current_params = params.copy()
+            current_params["offset"] = current_offset
+            current_params["count"] = page_size
+
+            data = self.fetch_endpoint_manifold(endpoint, params=current_params)
+
+            # Different endpoints might return lists under different keys.
+            records = data.get("diseases") or data.get("results") or data.get("staging") or []
+
+            if not records:
+                break
+
+            yield records
+
+            if len(records) < page_size:
+                # We received fewer records than requested, so we're at the end.
+                break
+
+            current_offset += page_size
