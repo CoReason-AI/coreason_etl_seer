@@ -18,3 +18,9 @@ clean-targets:
 models:
   coreason_etl_seer:
     +materialized: table
+    staging:
+      +schema: bronze
+    silver:
+      +schema: silver
+    gold:
+      +schema: gold
