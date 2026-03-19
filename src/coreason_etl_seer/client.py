@@ -12,7 +12,9 @@
 
 import time
 from collections.abc import Iterator
+from http import HTTPStatus
 from typing import Any
+from urllib.parse import urljoin
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -66,8 +68,10 @@ class EpistemicSeerClientPolicy:
 
     def fetch_endpoint_manifold(self, endpoint: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         """Fetches data from a given SEER API endpoint."""
-        base_url = str(self.config.seer_base_url).rstrip("/")
-        url = f"{base_url}/{endpoint.lstrip('/')}"
+        base_url = str(self.config.seer_base_url)
+        if not base_url.endswith("/"):
+            base_url += "/"
+        url = urljoin(base_url, endpoint.lstrip("/"))
 
         self._enforce_proactive_rate_limit()
 
@@ -90,15 +94,18 @@ class EpistemicSeerClientPolicy:
         except requests.exceptions.HTTPError as http_err:
             status_code = response.status_code
             logger.exception(f"HTTPError {status_code} from SEER API endpoint {url}")
-            if status_code == 401 or status_code == 403:
-                raise SeerAuthenticationFaultEvent(f"Authentication failed: {http_err}") from http_err
-            if status_code == 404:
-                raise SeerResourceNotFoundFaultEvent(f"Resource not found: {http_err}") from http_err
-            if status_code == 429:
-                raise SeerRateLimitFaultEvent(f"Rate limit exceeded: {http_err}") from http_err
-            if status_code >= 500:
-                raise SeerGatewayFaultEvent(f"Server error: {http_err}") from http_err
-            raise EpistemicSeerFaultEvent(f"HTTP Error: {http_err}") from http_err
+
+            match status_code:
+                case HTTPStatus.UNAUTHORIZED | HTTPStatus.FORBIDDEN:
+                    raise SeerAuthenticationFaultEvent(f"Authentication failed: {http_err}") from http_err
+                case HTTPStatus.NOT_FOUND:
+                    raise SeerResourceNotFoundFaultEvent(f"Resource not found: {http_err}") from http_err
+                case HTTPStatus.TOO_MANY_REQUESTS:
+                    raise SeerRateLimitFaultEvent(f"Rate limit exceeded: {http_err}") from http_err
+                case code if code >= HTTPStatus.INTERNAL_SERVER_ERROR:
+                    raise SeerGatewayFaultEvent(f"Server error: {http_err}") from http_err
+                case _:
+                    raise EpistemicSeerFaultEvent(f"HTTP Error: {http_err}") from http_err
         except requests.exceptions.RequestException as req_err:
             logger.exception(f"Failed to fetch data from SEER API endpoint {url}")
             raise EpistemicSeerFaultEvent(f"Request Error: {req_err}") from req_err
@@ -119,9 +126,7 @@ class EpistemicSeerClientPolicy:
             data = self.fetch_endpoint_manifold(endpoint, params=current_params)
 
             # Different endpoints might return lists under different keys.
-            records = data.get("diseases", []) if "diseases" in data else data.get("results", [])
-            if not records and "staging" in data:
-                records = data["staging"]
+            records = data.get("diseases") or data.get("results") or data.get("staging") or []
 
             if not records:
                 break

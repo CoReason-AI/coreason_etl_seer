@@ -32,7 +32,7 @@ from coreason_etl_seer.exceptions import (
 def test_config(monkeypatch: pytest.MonkeyPatch) -> EpistemicSeerConfigurationPolicy:
     """Provides a valid EpistemicSeerConfigurationPolicy for testing."""
     monkeypatch.setenv("SEER_API_KEY", "mock-api-key")
-    monkeypatch.setenv("SEER_BASE_URL", "https://api.seer.cancer.gov/rest/")
+    monkeypatch.setenv("SEER_BASE_URL", "https://api.seer.cancer.gov/rest")
     monkeypatch.delenv("MAX_TABLE_NESTING", raising=False)
     monkeypatch.delenv("SEER_NAMESPACE_UUID", raising=False)
     return EpistemicSeerConfigurationPolicy()
