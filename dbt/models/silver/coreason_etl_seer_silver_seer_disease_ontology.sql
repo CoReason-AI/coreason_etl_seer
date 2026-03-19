@@ -12,7 +12,7 @@ with recursive disease_hierarchy as (
         behavior_code,
         1 as hierarchy_level,
         disease_id::text as lineage_path
-    from {{ ref('stg_seer_disease') }}
+    from {{ ref('coreason_etl_seer_bronze_seer_disease') }}
     where parent_disease_id is null
 
     union all
@@ -28,7 +28,7 @@ with recursive disease_hierarchy as (
         child.behavior_code,
         parent.hierarchy_level + 1 as hierarchy_level,
         parent.lineage_path || '->' || child.disease_id as lineage_path
-    from {{ ref('stg_seer_disease') }} as child
+    from {{ ref('coreason_etl_seer_bronze_seer_disease') }} as child
     inner join disease_hierarchy as parent on child.parent_disease_id = parent.disease_id
 )
 
