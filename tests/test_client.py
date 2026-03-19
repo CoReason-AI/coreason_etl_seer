@@ -339,6 +339,106 @@ def test_paginate_endpoint_manifold_staging_key(seer_client: EpistemicSeerClient
     assert pages[0] == [{"id": "1"}]
 
 
+@responses.activate
+def test_paginate_endpoint_manifold_results_key(seer_client: EpistemicSeerClientPolicy) -> None:
+    """Verifies pagination logic handles 'results' fallback key in response."""
+    url = "https://api.seer.cancer.gov/rest/unknown"
+
+    responses.add(
+        responses.GET,
+        url,
+        json={"results": [{"id": "99"}]},
+        status=200,
+        match=[responses.matchers.query_param_matcher({"offset": "0", "count": "2"})],
+    )
+
+    pages = list(seer_client.paginate_endpoint_manifold("unknown", page_size=2))
+    assert len(pages) == 1
+    assert pages[0] == [{"id": "99"}]
+
+
+@responses.activate
+def test_paginate_endpoint_manifold_exact_boundary(seer_client: EpistemicSeerClientPolicy) -> None:
+    """Verifies pagination when the page size perfectly matches the total records."""
+    url = "https://api.seer.cancer.gov/rest/disease"
+
+    responses.add(
+        responses.GET,
+        url,
+        json={"diseases": [{"id": "1"}, {"id": "2"}]},
+        status=200,
+        match=[responses.matchers.query_param_matcher({"offset": "0", "count": "2"})],
+    )
+    # The second page should return empty, terminating the loop.
+    responses.add(
+        responses.GET,
+        url,
+        json={"diseases": []},
+        status=200,
+        match=[responses.matchers.query_param_matcher({"offset": "2", "count": "2"})],
+    )
+
+    pages = list(seer_client.paginate_endpoint_manifold("disease", page_size=2))
+    assert len(pages) == 1
+    assert pages[0] == [{"id": "1"}, {"id": "2"}]
+
+
+@responses.activate
+def test_paginate_endpoint_manifold_with_params(seer_client: EpistemicSeerClientPolicy) -> None:
+    """Verifies that custom query parameters are passed through alongside offset/count."""
+    url = "https://api.seer.cancer.gov/rest/disease"
+
+    responses.add(
+        responses.GET,
+        url,
+        json={"diseases": [{"id": "1"}]},
+        status=200,
+        match=[responses.matchers.query_param_matcher({"offset": "0", "count": "2", "type": "lung"})],
+    )
+
+    pages = list(seer_client.paginate_endpoint_manifold("disease", params={"type": "lung"}, page_size=2))
+    assert len(pages) == 1
+    assert pages[0] == [{"id": "1"}]
+
+
+@responses.activate
+def test_paginate_endpoint_manifold_midway_failure_recovery(seer_client: EpistemicSeerClientPolicy) -> None:
+    """Verifies pagination logic can recover from a transient failure (e.g. 500) midway through pages."""
+    url = "https://api.seer.cancer.gov/rest/disease"
+
+    # First page succeeds
+    responses.add(
+        responses.GET,
+        url,
+        json={"diseases": [{"id": "1"}, {"id": "2"}]},
+        status=200,
+        match=[responses.matchers.query_param_matcher({"offset": "0", "count": "2"})],
+    )
+
+    # Second page fails with 500, but requests Session Retry will try again.
+    responses.add(
+        responses.GET,
+        url,
+        json={"error": "Internal Server Error"},
+        status=500,
+        match=[responses.matchers.query_param_matcher({"offset": "2", "count": "2"})],
+    )
+    # Second page succeeds on retry
+    responses.add(
+        responses.GET,
+        url,
+        json={"diseases": [{"id": "3"}]},
+        status=200,
+        match=[responses.matchers.query_param_matcher({"offset": "2", "count": "2"})],
+    )
+
+    pages = list(seer_client.paginate_endpoint_manifold("disease", page_size=2))
+
+    assert len(pages) == 2
+    assert pages[0] == [{"id": "1"}, {"id": "2"}]
+    assert pages[1] == [{"id": "3"}]
+
+
 def test_proactive_rate_limit(seer_client: EpistemicSeerClientPolicy, mock_time_sleep: MagicMock) -> None:
     """Verifies that proactive rate limiting enforces the delay."""
     seer_client.last_request_time = 0.0  # Force a long time ago
