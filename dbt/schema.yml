@@ -1,6 +1,36 @@
 version: 2
 
 models:
+  - name: coreason_etl_seer_bronze_seer_disease
+    description: "Staging model flattening JSONB raw payloads into a basic tabular structure for the disease ontology."
+    columns:
+      - name: disease_id
+        description: "Primary Key extracted from SEER Disease ID."
+        tests:
+          - unique
+          - not_null
+      - name: coreason_id
+        description: "Pre-computed UUIDv5 surrogate key."
+        tests:
+          - unique
+          - not_null
+      - name: disease_name
+        description: "Name of the disease (e.g., 'Lung adenocarcinoma')."
+
+  - name: coreason_etl_seer_bronze_seer_staging
+    description: "Staging model flattening JSONB raw payloads into a basic tabular structure for staging schemas."
+    columns:
+      - name: disease_id
+        description: "Primary Key extracted from SEER Staging/Disease ID."
+        tests:
+          - unique
+          - not_null
+      - name: coreason_id
+        description: "Pre-computed UUIDv5 surrogate key."
+        tests:
+          - unique
+          - not_null
+
   - name: SEER_Disease_Ontology
     description: "Silver layer table mapping SEER disease ontology with flattened hierarchy."
     columns:
@@ -10,7 +40,7 @@ models:
           - unique
           - not_null
       - name: coreason_id
-        description: "Pre-computed UUIDv5."
+        description: "Pre-computed UUIDv5 surrogate key."
         tests:
           - unique
           - not_null
@@ -18,3 +48,53 @@ models:
         description: "Name of the disease (e.g., 'Lung adenocarcinoma')."
         tests:
           - not_null
+      - name: icdo3_site_code
+        description: "ICD-O-3 primary site code (e.g., 'C34.9')."
+      - name: icdo3_histology_code
+        description: "ICD-O-3 morphology/histology code (e.g., '8140')."
+      - name: behavior_code
+        description: "ICD-O-3 behavior code (e.g., '3' for Malignant)."
+        tests:
+          - accepted_values:
+              values: ['0', '1', '2', '3', '6', '9']
+              quote: false
+
+  - name: gold_seer_oncology_index
+    description: "Gold layer denormalized index mapping disease names to full ICD-O-3 codes."
+    columns:
+      - name: disease_id
+        description: "Primary Key extracted from SEER Disease ID."
+        tests:
+          - unique
+          - not_null
+      - name: coreason_id
+        description: "Pre-computed UUIDv5 surrogate key."
+        tests:
+          - unique
+          - not_null
+      - name: disease_name
+        description: "Name of the disease."
+        tests:
+          - not_null
+      - name: full_icdo3_code
+        description: "Concatenated full ICD-O-3 code string (Site-Histology-Behavior)."
+        tests:
+          - not_null
+
+  - name: gold_seer_staging_schemas
+    description: "Gold layer mapping specific diseases to valid staging schemas (e.g., TNM, EOD)."
+    columns:
+      - name: disease_id
+        description: "Primary Key extracted from SEER Staging/Disease ID."
+        tests:
+          - unique
+          - not_null
+      - name: coreason_id
+        description: "Pre-computed UUIDv5 surrogate key."
+        tests:
+          - unique
+          - not_null
+      - name: staging_name
+        description: "Name of the staging schema."
+      - name: staging_schema
+        description: "Underlying staging framework identifier."
