@@ -68,7 +68,6 @@ models:
         tests:
           - accepted_values:
               values: ['0', '1', '2', '3', '6', '9']
-              quote: false
 
   - name: gold_seer_oncology_index
     description: "Gold layer denormalized index mapping disease names to full ICD-O-3 codes."

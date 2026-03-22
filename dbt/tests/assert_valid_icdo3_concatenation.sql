@@ -10,7 +10,7 @@ with validation as (
         icdo3_site_code,
         icdo3_histology_code,
         behavior_code
-    from {{ ref('coreason_etl_seer_gold_seer_oncology_index') }}
+    from {{ ref('gold_seer_oncology_index') }}
 ),
 
 validation_errors as (
