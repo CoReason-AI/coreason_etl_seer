@@ -1,4 +1,7 @@
-{{ config(materialized='table') }}
+{{ config(
+    materialized='table',
+    alias='coreason_etl_seer_silver_seer_disease_ontology'
+) }}
 
 with recursive disease_hierarchy as (
     -- Anchor member

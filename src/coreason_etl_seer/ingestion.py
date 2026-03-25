@@ -27,42 +27,42 @@ def _generate_coreason_id(namespace: uuid.UUID, seer_id: str) -> str:
     return str(uuid.uuid5(namespace, seer_id))
 
 
-def fetch_and_prepare_disease_records(
+def _fetch_and_prepare_records(
     client: EpistemicSeerClientPolicy,
     namespace: uuid.UUID,
+    endpoint: str,
+    record_keys: list[str],
+    id_alias: str,
     api_version: str = "latest",
 ) -> Iterator[list[dict[str, Any]]]:
-    """Fetches the /disease endpoint and returns mapped records in batches."""
-    logger.info("Fetching disease records from SEER API.")
-    data = client.fetch_endpoint_manifold("disease")
+    """Generic function to fetch data from SEER API, convert to Polars, and pre-compute coreason_id UUIDs."""
+    logger.info(f"Fetching {endpoint} records from SEER API.")
+    data = client.fetch_endpoint_manifold(endpoint)
 
-    # Check if the response is a dictionary containing a list of diseases
-    # The API structure usually nests items or is a flat list depending on endpoint.
-    # We will assume a 'diseases' or a similar structure or maybe the endpoint returns a list directly?
-    # Actually `fetch_endpoint_manifold` returns `dict[str, Any]`. We assume it has a key for records,
-    # e.g., 'results' or similar, but the user says "Extract the id from the SEER API response".
+    records = []
+    for key in record_keys:
+        if key in data:
+            records = data[key]
+            break
 
-    records = data.get("diseases", []) if "diseases" in data else data.get("results", [])
     if not records and "id" in data:
-        records = [data]  # Fallback if single object
+        records = [data]
 
     if not records:
-        logger.warning("No disease records found in the payload.")
+        logger.warning(f"No {endpoint} records found in the payload.")
         yield []
         return
 
     df = pl.DataFrame(records)
 
-    # We need to compute coreason_id.
     if "id" not in df.columns:
-        logger.warning("No 'id' field found in disease records.")
+        logger.warning(f"No 'id' field found in {endpoint} records.")
         yield df.to_dicts()
         return
 
-    # Using map_batches with pre-computed coreason_ids
     df = df.with_columns(
         [
-            pl.col("id").alias("disease_id"),
+            pl.col("id").alias(id_alias),
             pl.col("id")
             .map_elements(lambda x: _generate_coreason_id(namespace, str(x)), return_dtype=pl.Utf8)
             .alias("coreason_id"),
@@ -71,6 +71,22 @@ def fetch_and_prepare_disease_records(
     )
 
     yield df.to_dicts()
+
+
+def fetch_and_prepare_disease_records(
+    client: EpistemicSeerClientPolicy,
+    namespace: uuid.UUID,
+    api_version: str = "latest",
+) -> Iterator[list[dict[str, Any]]]:
+    """Fetches the /disease endpoint and returns mapped records in batches."""
+    yield from _fetch_and_prepare_records(
+        client=client,
+        namespace=namespace,
+        endpoint="disease",
+        record_keys=["diseases", "results"],
+        id_alias="disease_id",
+        api_version=api_version,
+    )
 
 
 def fetch_and_prepare_staging_records(
@@ -79,36 +95,14 @@ def fetch_and_prepare_staging_records(
     api_version: str = "latest",
 ) -> Iterator[list[dict[str, Any]]]:
     """Fetches the /staging endpoint and returns mapped records in batches."""
-    logger.info("Fetching staging records from SEER API.")
-    data = client.fetch_endpoint_manifold("staging")
-
-    records = data.get("staging", []) if "staging" in data else data.get("results", [])
-    if not records and "id" in data:
-        records = [data]
-
-    if not records:
-        logger.warning("No staging records found in the payload.")
-        yield []
-        return
-
-    df = pl.DataFrame(records)
-
-    if "id" not in df.columns:
-        logger.warning("No 'id' field found in staging records.")
-        yield df.to_dicts()
-        return
-
-    df = df.with_columns(
-        [
-            pl.col("id").alias("staging_id"),  # Or keep as disease_id, but maybe staging_id is better
-            pl.col("id")
-            .map_elements(lambda x: _generate_coreason_id(namespace, str(x)), return_dtype=pl.Utf8)
-            .alias("coreason_id"),
-            pl.lit(api_version).alias("api_version"),
-        ]
+    yield from _fetch_and_prepare_records(
+        client=client,
+        namespace=namespace,
+        endpoint="staging",
+        record_keys=["staging", "results"],
+        id_alias="staging_id",
+        api_version=api_version,
     )
-
-    yield df.to_dicts()
 
 
 @dlt.source
